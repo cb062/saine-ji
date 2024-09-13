@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ニュースサイネージ</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: url('背景.jpg') no-repeat center center fixed; /* 背景画像を設定 */
+            background-size: cover; /* 画像をカバーする */
+            color: white;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; /* スクロールを防ぐ */
+        }
+        .news-container {
+            width: 90%;
+            height: 95vh; /* 高さを95vhに変更 */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            box-sizing: border-box; /* パディングを含めたサイズ計算 */
+        }
+        .news-header {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+        .news-header img {
+            width: 40%; /* 画像の幅を40%に設定 */
+            height: auto; /* 高さを自動調整 */
+            margin-right: 10%;
+        }
+        .news-card {
+            background: white; /* 背景色を白に変更 */
+            color: black; /* テキストの色を黒に変更 */
+            border-radius: 15px;
+            padding: 2vw; /* パディングをvw単位に変更 */
+            margin: 2vh 0; /* マージンをvh単位に変更 */
+            width: 100%;
+            height: 70vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            box-shadow: 10px 8px 16px rgba(0, 0, 0, 1);
+            box-sizing: border-box;
+            position: relative; /* 相対位置 */
+        }
+        .news-card h2 {
+            margin-top: 0;
+            font-size: calc(2em + 1vw); /* フォントサイズを大きく */
+            word-wrap: break-word; /* 長い単語を折り返す */
+            width: 95%; /* 幅を95%に設定 */
+            height: auto; /* 高さを自動調整 */
+            text-align: center; /* 見出しを中央揃え */
+            color: black; /* 見出しの色を黒に変更 */
+            font-weight: bold; /* 太字にする */
+            background-color: #f0f0f0; /* 背景色を追加 */
+            padding: 1vw; /* パディングをvw単位に変更 */
+            border-radius: 10px; /* 角を丸く */
+            border: 2px solid #ccc; /* ボーダーを追加 */
+            margin: 0 auto; /* 中央揃え */
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* テキストの影 */
+        }
+        .news-content {
+            display: flex;
+            align-items: flex-start; /* 上に詰める */
+            height: 100%;
+            width: 100%;
+            position: relative; /* 相対位置 */
+            margin-top: 3vh; /* 上に3vhのマージンを追加 */
+        }
+        .news-card p {
+            font-size: 2.4vw; /* フォントサイズをvw単位に変更 */
+            width: 50%;
+            margin: 0;
+            overflow: hidden; /* テキストのオーバーフローを防ぐ */
+            position: relative; /* 相対位置 */
+            z-index: 2; /* テキストを前面に */
+        }
+        .news-card .background-image {
+            position: absolute; /* 絶対位置 */
+            top: 50%; /* 上から50% */
+            left: 25%; /* 左から25% */
+            transform: translate(-50%, -50%); /* 中心に配置 */
+            width: 40%; /* 幅を40%に設定 */
+            height: auto; /* 高さを自動調整 */
+            opacity: 0.3; /* 透明度を設定 */
+            z-index: 1; /* 背景画像を背面に */
+            border-radius: 10px; /* 画像の角を丸く */
+        }
+        .news-card img {
+            width: 50%;
+            height: auto; /* 高さを自動調整 */
+            border-radius: 10px;
+            margin-left: 2vw; /* マージンをvw単位に変更 */
+            object-fit: cover;
+            display: flex;
+            align-items: center;
+        }
+        .news-card .source {
+            font-size: 1vw; /* フォントサイズを小さく */
+            color: black; /* テキストの色を黒に変更 */
+            text-align: right; /* 右揃え */
+            position: absolute; /* 絶対位置 */
+            bottom: 1vh; /* 下から1vh */
+            right: 1vw; /* 右から1vw */
+        }
+        @media (max-width: 768px) {
+            .news-card {
+                flex-direction: column;
+                height: auto;
+            }
+            .news-card p, .news-card img {
+                width: 100%;
+                margin: 0;
+            }
+            .news-card img {
+                margin-top: 2vh; /* マージンをvh単位に変更 */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="news-container">
+        <div class="news-header">
+            <img src="NEWSロゴ.png" alt="ニュースヘッダー">
+        </div>
+        <div id="news"></div>
+    </div>
+
+    <script>
+        async function fetchRSS() {
+            const response = await fetch('https://www.nhk.or.jp/rss/news/cat0.xml');
+            const text = await response.text();
+            const parser = new DOMParser();
+            const xml = parser.parseFromString(text, "text/xml");
+            const items = xml.querySelectorAll("item");
+            const randomIndex = Math.floor(Math.random() * items.length);
+            const item = items[randomIndex];
+            const title = item.querySelector("title").textContent;
+            const description = item.querySelector("description").textContent;
+            const link = item.querySelector("link").textContent;
+            const img = await fetchImage(link);
+            const html = `
+                <div class="news-card">
+                    <h2>${title}</h2>
+                    <div class="news-content">
+                        <p>${description}</p>
+                        <img src="${img}" alt="${title}">
+                        <img class="background-image" src="千葉産業ロゴ元データ.png" alt="背景画像">
+                    </div>
+                    <p class="source">引用元: NHKニュース</p>
+                </div>
+            `;
+            document.getElementById("news").innerHTML = html;
+            adjustFontSize(); // フォントサイズ調整をここで呼び出す
+        }
+
+        async function fetchImage(url) {
+            const response = await fetch(url);
+            const text = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(text, "text/html");
+            const img = doc.querySelector("meta[property='og:image']").getAttribute("content");
+            return img;
+        }
+
+        function adjustFontSize() {
+            const description = document.querySelector('.news-card p');
+            const img = document.querySelector('.news-card img');
+            let fontSize = 4; // 初期フォントサイズ
+            description.style.fontSize = `${fontSize}em`;
+
+            img.onload = () => {
+                console.log('Image height:', img.clientHeight);
+
+                while (description.scrollHeight > img.clientHeight && fontSize > 0.5) {
+                    fontSize -= 0.1;
+                    description.style.fontSize = `${fontSize}em`;
+                }
+
+                // 文字サイズが小さくなりすぎた場合に再調整
+                while (description.scrollHeight < img.clientHeight && fontSize < 2.5) {
+                    fontSize += 0.1;
+                    description.style.fontSize = `${fontSize}em`;
+                }
+            };
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchRSS();
+        });
+    </script>
+</body>
+</html>
